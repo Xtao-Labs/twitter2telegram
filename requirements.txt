@@ -1,0 +1,10 @@
+pyrogram==2.0.106
+tgcrypto==1.2.5
+httpx==0.24.1
+feedparser
+beautifulsoup4
+lxml
+coloredlogs
+apscheduler
+sqlitedict
+pydantic
