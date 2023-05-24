@@ -89,7 +89,13 @@ async def send_to_user(user: User, tweet: Tweet):
 
 @flood_wait()
 async def send_username_changed(user: str):
-    text = f"获取 {user} 的数据失败，可能用户名已改变"
+    text = f"获取 {user} 的数据失败，可能用户名已改变，请考虑移除该用户"
+    await bot.send_message(owner, text)
+
+
+@flood_wait()
+async def send_api_error():
+    text = "获取数据过多，可能 API 失效"
     await bot.send_message(owner, text)
 
 
@@ -111,6 +117,7 @@ async def send_check(user_data: User):
 async def check_update():
     logs.info("开始检查更新")
     users = UserDB.get_all()
+    failed_users = []
     nums = len(users)
     for idx, user in enumerate(users):
         try:
@@ -120,11 +127,17 @@ async def check_update():
                 await send_check(user_data)
             else:
                 logs.warning(f"获取 {user} 的数据失败，未知原因")
+                failed_users.append(user)
         except UsernameNotFound:
             logs.warning(f"获取 {user} 的数据失败，可能用户名已改变")
-            await send_username_changed(user)
-            UserDB.remove(user)
+            failed_users.append(user)
         except Exception:
             traceback.print_exc()
         logs.info(f"处理完成，剩余 {nums - idx - 1} 个用户")
+    if len(failed_users) > 5:
+        logs.warning("失效数据过多，可能 API 失效")
+        await send_api_error()
+    else:
+        for user in failed_users:
+            await send_username_changed(user)
     logs.info("检查更新完成")
