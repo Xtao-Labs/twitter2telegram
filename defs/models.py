@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List
 
 from pydantic import BaseModel
@@ -16,7 +16,8 @@ class Tweet(BaseModel):
 
     @property
     def time_str(self) -> str:
-        return self.time.strftime("%Y-%m-%d %H:%M:%S")
+        utc_8_time = self.time + timedelta(hours=8)
+        return utc_8_time.strftime("%Y-%m-%d %H:%M:%S")
 
 
 class User(BaseModel):
