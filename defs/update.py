@@ -1,6 +1,7 @@
 import asyncio
+import time
 import traceback
-from typing import List
+from typing import List, Dict
 
 from pyrogram.enums import ParseMode
 from pyrogram.errors import FloodWait
@@ -93,12 +94,6 @@ async def send_username_changed(user: str):
     await bot.send_message(owner, text)
 
 
-@flood_wait()
-async def send_api_error():
-    text = "获取数据过多，可能 API 失效"
-    await bot.send_message(owner, text)
-
-
 async def send_check(user_data: User):
     need_send_tweets = [
         tweet for tweet in user_data.tweets
@@ -114,29 +109,51 @@ async def send_check(user_data: User):
         TweetDB.add(user_data.username, tweet.id)
 
 
+async def async_get_user(user_data: Dict, username: str) -> None:
+    try:
+        data = await get_user(username)
+        if data:
+            user_data[username] = data
+        else:
+            user_data[username] = None
+            logs.warning(f"获取 {username} 的数据失败，未知原因")
+    except UsernameNotFound:
+        logs.warning(f"获取 {username} 的数据失败，可能用户名已改变")
+        user_data[username] = UsernameNotFound
+    except Exception:
+        logs.error(f"获取 {username} 的数据失败")
+        traceback.print_exc()
+        user_data[username] = None
+
+
 async def check_update():
     logs.info("开始检查更新")
     users = UserDB.get_all()
+    users_data = {user: None for user in users}
+    tasks = [async_get_user(users_data, user) for user in users]
+    tasks_count = len(tasks) // 20 + 1 if len(tasks) % 20 else len(tasks) // 20
+    start_time = time.time()
+    for idx in range(0, len(tasks), 20):
+        tasks_group = tasks[idx:idx + 20]
+        logs.info(f"开始获取第 {idx // 20 + 1} / {tasks_count} 组用户的数据")
+        await asyncio.gather(*tasks_group)
+    logs.info(f"获取数据用时 {time.time() - start_time:.2f} 秒")
     failed_users = []
-    nums = len(users)
-    for idx, user in enumerate(users):
-        try:
-            user_data = await get_user(user)
-            if user_data:
-                logs.info(f"获取 {user_data.name} 的数据成功，共 {len(user_data.tweets)} 条推文")
-                await send_check(user_data)
-            else:
-                logs.warning(f"获取 {user} 的数据失败，未知原因")
-                failed_users.append(user)
-        except UsernameNotFound:
-            logs.warning(f"获取 {user} 的数据失败，可能用户名已改变")
-            failed_users.append(user)
-        except Exception:
-            traceback.print_exc()
+    nums = len(users_data)
+    keys = list(users_data.keys())
+    values = list(users_data.values())
+    for idx in range(nums):
+        username = keys[idx]
+        user_data = values[idx]
+        if isinstance(user_data, User):
+            logs.info(f"获取 {user_data.name} 的数据成功，共 {len(user_data.tweets)} 条推文")
+            await send_check(user_data)
+        elif isinstance(user_data, UsernameNotFound):
+            logs.warning(f"获取 {username} 的数据失败，可能用户名已改变")
+            failed_users.append(username)
         logs.info(f"处理完成，剩余 {nums - idx - 1} 个用户")
     if len(failed_users) > 5:
         logs.warning("失效数据过多，可能 API 失效")
-        await send_api_error()
     else:
         for user in failed_users:
             await send_username_changed(user)

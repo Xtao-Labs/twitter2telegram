@@ -3,7 +3,7 @@ import httpx
 
 from defs.glover import api_id, api_hash
 from scheduler import scheduler
-from logging import getLogger, INFO, ERROR, StreamHandler, basicConfig
+from logging import getLogger, INFO, ERROR, StreamHandler, basicConfig, FileHandler, Formatter
 from coloredlogs import ColoredFormatter
 
 # Enable logging
@@ -11,9 +11,12 @@ logs = getLogger("T2G")
 logging_format = "%(levelname)s [%(asctime)s] [%(name)s] %(message)s"
 logging_handler = StreamHandler()
 logging_handler.setFormatter(ColoredFormatter(logging_format))
+file_handler = FileHandler("log.txt", mode="w", encoding="utf-8")
+file_handler.setFormatter(Formatter(logging_format))
 root_logger = getLogger()
 root_logger.setLevel(ERROR)
 root_logger.addHandler(logging_handler)
+root_logger.addHandler(file_handler)
 basicConfig(level=INFO)
 logs.setLevel(INFO)
 

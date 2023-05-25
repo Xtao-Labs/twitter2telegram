@@ -14,13 +14,17 @@ class UsernameNotFound(Exception):
     pass
 
 
-async def get(username: str):
-    url = f"{rss_hub_host}/twitter/user/{username}"
+class HostNeedChange(Exception):
+    pass
+
+
+async def get(username: str, host: str) -> Optional[FeedParserDict]:
+    url = f"{host}/twitter/user/{username}"
     response = await request.get(url)
     if response.status_code == 200:
         return parse(response.text)
     elif response.status_code == 404:
-        raise UsernameNotFound
+        raise HostNeedChange
     else:
         return None
 
@@ -57,8 +61,13 @@ async def parse_user(username: str, data: FeedParserDict) -> User:
 
 
 async def get_user(username: str) -> Optional[User]:
-    data = await get(username)
-    if data:
-        return await parse_user(username, data)
-    else:
-        return None
+    for host in rss_hub_host:
+        try:
+            data = await get(username, host)
+            if data:
+                return await parse_user(username, data)
+        except HostNeedChange:
+            if host == rss_hub_host[-1]:
+                raise UsernameNotFound
+            continue
+    return None
