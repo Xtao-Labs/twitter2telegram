@@ -4,7 +4,7 @@ from typing import List
 
 from defs.feed import UsernameNotFound
 from defs.models import User
-from defs.sqlite import UserDB
+from defs.sqlite import UserDB, TweetDB
 from defs.update import async_get_user
 from init import logs
 
@@ -40,6 +40,12 @@ async def check_need_add(users_data) -> List[str]:
         if isinstance(user_data, User):
             logs.info(f"获取 {user_data.name} (@{user_data.username}) 的数据成功，"
                       f"共 {len(user_data.tweets)} 条推文")
+            need_send_tweets = [
+                tweet for tweet in user_data.tweets[1:]
+                if not TweetDB.check_id(user_data.username, tweet.id)
+            ]
+            for tweet in need_send_tweets:
+                TweetDB.add(user_data.username, tweet.id)
             need_add.append(user_data.username)
         elif isinstance(user_data, UsernameNotFound):
             logs.warning(f"获取 {username} 的数据失败，可能用户名已改变")

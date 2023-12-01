@@ -105,7 +105,6 @@ async def send_check(user_data: User):
             await send_to_user(user_data, tweet)
         except Exception:
             logs.error(f"推送 {user_data.name} 的推文 {tweet.id} 失败")
-            traceback.print_exc()
         TweetDB.add(user_data.username, tweet.id)
 
 
