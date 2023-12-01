@@ -3,10 +3,19 @@ import re
 from pyrogram import filters
 from pyrogram.types import Message
 
+from defs.feed import get_user
 from init import bot
 
 from defs.sqlite import UserDB
 from defs.glover import owner
+
+
+async def check_user(username: str) -> bool:
+    try:
+        await get_user(username)
+        return True
+    except:
+        return False
 
 
 @bot.on_message(filters=filters.command("add_user") & filters.user(owner))
@@ -18,6 +27,9 @@ async def add_user(_, message: Message):
         return
     if UserDB.check(username):
         await message.reply("该用户添加过了！")
+        return
+    if not await check_user(username):
+        await message.reply("该用户不存在！或者 rss 服务出现问题！")
         return
     UserDB.add(username)
     await message.reply("添加成功！")
@@ -34,6 +46,9 @@ async def add_user_regex(_, message: Message):
         return
     if UserDB.check(username):
         await message.reply("该用户添加过了！")
+        return
+    if not await check_user(username):
+        await message.reply("该用户不存在！或者 rss 服务出现问题！")
         return
     UserDB.add(username)
     await message.reply(f"添加 {username} 成功！")

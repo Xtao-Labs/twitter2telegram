@@ -4,3 +4,4 @@ rss_hub_host = ["https://rsshub.app"]
 cid = 11
 tid = None
 owner = 11
+logtail_token = None

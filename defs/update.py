@@ -122,7 +122,6 @@ async def async_get_user(user_data: Dict, username: str) -> None:
         user_data[username] = UsernameNotFound
     except Exception:
         logs.error(f"获取 {username} 的数据失败")
-        traceback.print_exc()
         user_data[username] = None
 
 

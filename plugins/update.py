@@ -16,6 +16,6 @@ async def update_all(_, message: Message):
     await msg.edit("检查更新完毕！")
 
 
-@scheduler.scheduled_job("cron", minute="*/30", id="update_all")
+@scheduler.scheduled_job("cron", minute="*/15", id="update_all")
 async def update_all_30_minutes():
     await check_update()
