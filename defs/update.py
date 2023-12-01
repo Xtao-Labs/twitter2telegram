@@ -94,18 +94,20 @@ async def send_username_changed(user: str):
     await bot.send_message(owner, text)
 
 
-async def send_check(user_data: User):
+async def send_check(user_data: User) -> bool:
     need_send_tweets = [
         tweet for tweet in user_data.tweets
         if not TweetDB.check_id(user_data.username, tweet.id)
     ]
-    logs.info(f"需要推送 {len(need_send_tweets)} 条推文")
+    if len(need_send_tweets):
+        logs.info(f"{user_data.name} (@{user_data.username}) 需要推送 {len(need_send_tweets)} 条推文")
     for tweet in need_send_tweets:
         try:
             await send_to_user(user_data, tweet)
         except Exception:
             logs.error(f"推送 {user_data.name} 的推文 {tweet.id} 失败")
         TweetDB.add(user_data.username, tweet.id)
+    return len(need_send_tweets) > 0
 
 
 async def async_get_user(user_data: Dict, username: str) -> None:
@@ -143,13 +145,15 @@ async def check_update():
     for idx in range(nums):
         username = keys[idx]
         user_data = values[idx]
+        check = True
         if isinstance(user_data, User):
-            logs.info(f"获取 {user_data.name} 的数据成功，共 {len(user_data.tweets)} 条推文")
-            await send_check(user_data)
+            logs.debug(f"获取 {user_data.name} 的数据成功，共 {len(user_data.tweets)} 条推文")
+            check = await send_check(user_data)
         elif isinstance(user_data, UsernameNotFound):
             logs.warning(f"获取 {username} 的数据失败，可能用户名已改变")
             failed_users.append(username)
-        logs.info(f"处理完成，剩余 {nums - idx - 1} 个用户")
+        if check:
+            logs.info(f"处理完成，剩余 {nums - idx - 1} 个用户")
     if len(failed_users) > 5:
         logs.warning("失效数据过多，可能 API 失效")
     else:
