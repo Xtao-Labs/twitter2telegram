@@ -1,3 +1,5 @@
+from asyncio import Lock
+
 from pyrogram.types import Message
 
 from defs.glover import owner
@@ -8,14 +10,23 @@ from pyrogram import filters
 
 from defs.update import check_update
 
+_lock = Lock()
+
 
 @bot.on_message(filters=filters.command("check_update") & filters.user(owner))
 async def update_all(_, message: Message):
-    msg = await message.reply("开始检查更新！")
-    await check_update()
-    await msg.edit("检查更新完毕！")
+    if _lock.locked():
+        await message.reply("正在检查更新，请稍后再试！")
+        return
+    async with _lock:
+        msg = await message.reply("开始检查更新！")
+        await check_update()
+        await msg.edit("检查更新完毕！")
 
 
 @scheduler.scheduled_job("cron", minute="*/15", id="update_all")
-async def update_all_30_minutes():
-    await check_update()
+async def update_all_15_minutes():
+    if _lock.locked():
+        return
+    async with _lock:
+        await check_update()
