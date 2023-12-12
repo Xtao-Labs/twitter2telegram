@@ -120,7 +120,7 @@ async def async_get_user(user_data: Dict, username: str) -> None:
             logs.warning(f"获取 {username} 的数据失败，未知原因")
     except UsernameNotFound:
         logs.warning(f"获取 {username} 的数据失败，可能用户名已改变")
-        user_data[username] = UsernameNotFound
+        user_data[username] = UsernameNotFound()
     except Exception:
         logs.error(f"获取 {username} 的数据失败")
         user_data[username] = None
@@ -151,6 +151,9 @@ async def check_update():
             check = await send_check(user_data)
         elif isinstance(user_data, UsernameNotFound):
             logs.warning(f"获取 {username} 的数据失败，可能用户名已改变")
+            failed_users.append(username)
+        else:
+            logs.error(f"获取 {username} 的数据失败，未知原因")
             failed_users.append(username)
         if check:
             logs.info(f"处理完成，剩余 {nums - idx - 1} 个用户")
