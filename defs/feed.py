@@ -18,15 +18,28 @@ class HostNeedChange(Exception):
     pass
 
 
+def retry(func):
+    async def wrapper(*args, **kwargs):
+        for i in range(3):
+            try:
+                return await func(*args, **kwargs)
+            except HostNeedChange:
+                if i == 2:
+                    raise HostNeedChange
+                continue
+
+    return wrapper
+
+
+@retry
 async def get(username: str, host: str) -> Optional[FeedParserDict]:
     url = f"{host}/twitter/user/{username}"
     response = await request.get(url)
     if response.status_code == 200:
         return parse(response.text)
     elif response.status_code == 404:
-        raise HostNeedChange
-    else:
-        return None
+        raise UsernameNotFound
+    raise HostNeedChange
 
 
 async def parse_tweets(data: List[FeedParserDict]) -> List[Tweet]:
