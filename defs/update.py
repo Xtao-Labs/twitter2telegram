@@ -166,7 +166,7 @@ async def check_update():
             logs.info(f"处理完成，剩余 {nums - idx - 1} 个用户")
     if len(failed_users) > 5:
         logs.warning("失效数据过多，可能 API 失效")
-    else:
-        for user in failed_users:
-            await send_username_changed(user)
+    # else:
+    #     for user in failed_users:
+    #         await send_username_changed(user)
     logs.info("检查更新完成")
