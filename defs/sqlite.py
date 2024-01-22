@@ -26,6 +26,12 @@ class TweetDB:
         tweets.append(tid)
         db[f"{TweetDB.prefix}{username}"] = tweets
 
+    @staticmethod
+    def remove(username: str, tid: int) -> None:
+        tweets = TweetDB.get_all(username)
+        tweets.remove(tid)
+        db[f"{TweetDB.prefix}{username}"] = tweets
+
 
 class UserDB:
     @staticmethod

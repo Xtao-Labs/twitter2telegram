@@ -95,10 +95,7 @@ async def send_username_changed(user: str):
 
 
 async def send_check(user_data: User) -> bool:
-    need_send_tweets = [
-        tweet for tweet in user_data.tweets
-        if not TweetDB.check_id(user_data.username, tweet.id)
-    ]
+    need_send_tweets = user_data.tweets
     if len(need_send_tweets):
         logs.info(f"{user_data.name} (@{user_data.username}) 需要推送 {len(need_send_tweets)} 条推文")
     for tweet in need_send_tweets:
@@ -106,14 +103,24 @@ async def send_check(user_data: User) -> bool:
             await send_to_user(user_data, tweet)
         except Exception:
             logs.error(f"推送 {user_data.name} 的推文 {tweet.id} 失败")
-        TweetDB.add(user_data.username, tweet.id)
+            TweetDB.remove(user_data.username, tweet.id)
     return len(need_send_tweets) > 0
+
+
+def filter_tweets(username: str, data: List[Tweet]) -> List[Tweet]:
+    tweets = []
+    for tweet in data:
+        if not TweetDB.check_id(username, tweet.id):
+            TweetDB.add(username, tweet.id)
+            tweets.append(tweet)
+    return tweets
 
 
 async def async_get_user(user_data: Dict, username: str) -> None:
     try:
         data = await get_user(username)
         if data:
+            data.tweets = filter_tweets(username, data.tweets)
             user_data[username] = data
         else:
             user_data[username] = None
