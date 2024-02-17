@@ -24,8 +24,8 @@ async def update_all(_, message: Message):
         await msg.edit("检查更新完毕！")
 
 
-@scheduler.scheduled_job("cron", minute="*/15", id="update_all")
-async def update_all_15_minutes():
+@scheduler.scheduled_job("cron", hour="*", minute="0", id="update_all")
+async def update_all_60_minutes():
     if _lock.locked():
         return
     async with _lock:
