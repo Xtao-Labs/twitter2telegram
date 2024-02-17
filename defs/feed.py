@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from bs4 import BeautifulSoup
+from httpx import RequestError
 
 from init import request
 from defs.glover import rss_hub_host, nitter_host
@@ -29,6 +30,8 @@ def retry(func):
             except HostNeedChange:
                 if i == 2:
                     raise HostNeedChange
+                continue
+            except RequestError:
                 continue
 
     return wrapper
